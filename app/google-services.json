@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "858956957660",
+    "firebase_url": "https://toilet-finder-1555962322896.firebaseio.com",
+    "project_id": "toilet-finder-1555962322896",
+    "storage_bucket": "toilet-finder-1555962322896.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:858956957660:android:f9ce268f81e4b8c3",
+        "android_client_info": {
+          "package_name": "edu.fontbonne.toiletfinder"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "858956957660-9ld249irg4lf8f7u6su5cqcrkb31aujm.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA7-mErpC75U-0Lxm7KIHvOUH-U03M9ZEU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "858956957660-9ld249irg4lf8f7u6su5cqcrkb31aujm.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

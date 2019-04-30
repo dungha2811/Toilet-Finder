@@ -1,0 +1,24 @@
+<resources>
+    <string name="app_name">Toilet Finder</string>
+    <string name="welcome">Welcome to Toilet Finder</string>
+    <string name="login">Log In</string>
+    <string name="newUser">Register</string>
+    <string name="guest">Guest</string>
+    <string name="inputUsername">Enter Username:</string>
+    <string name="inputPassword">Enter Password:</string>
+    <string name="reInputPassword">Re-Enter Password:</string>
+    <string name="inputEmail">Email Address:</string>
+    <string name="reInputEmail">Re Enter Email Address</string>
+    <string name="find">Find restroom</string>
+    <string name="contribute">Contribute restroom</string>
+
+    <!-- Firestore -->
+    <string name="collection_users">Users</string>
+    <string name="collection_user_locations">User Locations</string>
+    <string name="title_activity_menu">MenuActivity</string>
+
+    <!-- API key -->
+    <string name="API_key">AIzaSyC7ee3cQaMFRqq8fS04DeK3B66zDfbyEyM</string>
+    <string name="title_activity_map">MapActivity</string>
+    <string name="title_activity_contribute_location">Map</string>
+</resources>
