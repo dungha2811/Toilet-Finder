@@ -11,6 +11,7 @@
     <string name="reInputEmail">Re Enter Email Address</string>
     <string name="find">Find restroom</string>
     <string name="contribute">Contribute restroom</string>
+    <string name="sign_out">Sign Out</string>
 
     <!-- Firestore -->
     <string name="collection_users">Users</string>

@@ -105,7 +105,9 @@ public class ContributeLocation extends FragmentActivity implements OnMapReadyCa
         mMap = googleMap;
 
         if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)!= PackageManager.PERMISSION_GRANTED){
-            return;
+            ActivityCompat.requestPermissions(this,
+                    new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
+                    PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
         }
         else {
             mMap.setMyLocationEnabled(true);
@@ -121,25 +123,10 @@ public class ContributeLocation extends FragmentActivity implements OnMapReadyCa
                 LatLng curr = new LatLng(latitude, longitude);
                 mMap.addMarker(new MarkerOptions().position(curr).title("Your current location"));
                 mMap.moveCamera(CameraUpdateFactory.newLatLng(curr));
+                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(curr,12.0f));
             } else {
                 locationManager.requestLocationUpdates(bestProvider, 1000, 0, (LocationListener) this);
             }
-        }
-    }
-    private void getLocationPermission() {
-        /*
-         * Request location permission, so that we can get the location of the
-         * device. The result of the permission request is handled by a callback,
-         * onRequestPermissionsResult.
-         */
-        if (ContextCompat.checkSelfPermission(this.getApplicationContext(),
-                android.Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED) {
-            mLocationPermissionGranted = true;
-        } else {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
-                    PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
         }
     }
     @Override
@@ -170,7 +157,6 @@ public class ContributeLocation extends FragmentActivity implements OnMapReadyCa
                 mMap.setMyLocationEnabled(false);
                 mMap.getUiSettings().setMyLocationButtonEnabled(false);
                 mLocation = null;
-                getLocationPermission();
             }
         } catch (SecurityException e)  {
             Log.e("Exception: %s", e.getMessage());

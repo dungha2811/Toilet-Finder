@@ -1,11 +1,15 @@
 package edu.fontbonne.toiletfinder;
 
 import android.Manifest;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
+import android.nfc.Tag;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
@@ -23,6 +27,7 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
@@ -36,16 +41,15 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MapActivity extends FragmentActivity implements OnMapReadyCallback {
+public class MapActivity extends FragmentActivity implements OnMapReadyCallback{
 
     private GoogleMap mMap;
     Location mLocation;
     private FirebaseFirestore mDb;
-    Boolean mLocationPermissionGranted;
+    Boolean mLocationPermissionGranted ;
     Criteria criteria;
     String bestProvider;
-    List<RestroomLocation> list ;
-    private static final int  PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION =1;
+    private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION =1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,8 +59,9 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
-
         mDb = FirebaseFirestore.getInstance();
+
+
 
     }
 
@@ -74,6 +79,9 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
         if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)!= PackageManager.PERMISSION_GRANTED){
+            ActivityCompat.requestPermissions(this,
+                    new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
+                    PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
             return;
         }
         else {
@@ -82,16 +90,23 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
             criteria = new Criteria();
             bestProvider = String.valueOf(locationManager.getBestProvider(criteria, true));
             mLocation = locationManager.getLastKnownLocation(bestProvider);
+
+
+            LatLng curr = new LatLng(mLocation.getLatitude(),mLocation.getLongitude());
+            mMap.moveCamera(CameraUpdateFactory.newLatLng(curr));
+            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(curr,12.0f));
         }
         getItem(new FireStoreCallBack() {
             @Override
             public void OnCallBack(List<RestroomLocation> list) {
                 Log.d("Dung 1", list.get(0).getRestroomName());
+                for(int i = 0; i<list.size();i++) {
+                    LatLng latLng = new LatLng(list.get(i).getLatitude(), list.get(i).getLongitude());
+                    mMap.addMarker(new MarkerOptions().position(latLng).title(list.get(i).getRestroomName()));
+                }
             }
         });
-        //for(int i = 0; i<list.size();i++){
-           // LatLng latLng = new LatLng(list.get(i).getLatitude(),list.get(i).getLongitude());
-            //mMap.addMarker(new MarkerOptions().position(latLng).title(list.get(i).getRestroomName()));
+        //
         //}
 
         // Add a marker in Sydney and move the camera
@@ -100,26 +115,11 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
         //mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
     }
 
-    private void getLocationPermission() {
-        /*
-         * Request location permission, so that we can get the location of the
-         * device. The result of the permission request is handled by a callback,
-         * onRequestPermissionsResult.
-         */
-        if (ContextCompat.checkSelfPermission(this.getApplicationContext(),
-                android.Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED) {
-            mLocationPermissionGranted = true;
-        } else {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
-                    PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
-        }
-    }
     @Override
     public void onRequestPermissionsResult(int requestCode,
                                            @NonNull String permissions[],
                                            @NonNull int[] grantResults) {
+
         mLocationPermissionGranted = false;
         switch (requestCode) {
             case PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION: {
@@ -134,9 +134,12 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     }
     private void updateLocationUI() {
         if (mMap == null) {
+            Log.d("Dung 1",mLocationPermissionGranted+"");
             return;
         }
+
         try {
+            Log.d("Dung 2",mLocationPermissionGranted+"");
             if (mLocationPermissionGranted) {
                 mMap.setMyLocationEnabled(true);
                 mMap.getUiSettings().setMyLocationButtonEnabled(true);
@@ -144,7 +147,6 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
                 mMap.setMyLocationEnabled(false);
                 mMap.getUiSettings().setMyLocationButtonEnabled(false);
                 mLocation = null;
-                getLocationPermission();
             }
         } catch (SecurityException e)  {
             Log.e("Exception: %s", e.getMessage());
@@ -152,18 +154,25 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     }
 
     public void getItem(final FireStoreCallBack fireStoreCallBack){
+
         mDb.collection(getString(R.string.collection_restroom_locations)).get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
             @Override
             public void onComplete(@NonNull Task<QuerySnapshot> task) {
                 if(task.isSuccessful()){
+                    List<RestroomLocation> list = new ArrayList<>();
                     for(QueryDocumentSnapshot documentSnapshot :task.getResult()){
-                        RestroomLocation restroomLocation = documentSnapshot.toObject(RestroomLocation.class);
-                        list.add(restroomLocation);
-                        Log.d("Dung 1", list.get(0).getRestroomName());
+                       list.add(new RestroomLocation(documentSnapshot.getString("restroomName")
+                                , documentSnapshot.getDouble("latitude"), documentSnapshot.getDouble("longitude")));
                     }
                     fireStoreCallBack.OnCallBack(list);
                 }
             }
+        }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                Toast.makeText(MapActivity.this,"Failed to retrieve the data",Toast.LENGTH_LONG).show();
+            }
         });
     }
+
 }
