@@ -12,11 +12,13 @@ import android.widget.Button;
 public class MenuActivity extends AppCompatActivity {
 
     Button find;
+    Button contribute;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_menu);
         find = (Button) findViewById(R.id.btn_find);
+        contribute =(Button) findViewById(R.id.btn_contribute);
         find.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -24,6 +26,14 @@ public class MenuActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
+        contribute.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(MenuActivity.this,ContributeLocation.class);
+                startActivity(intent);
+            }
+        });
+
 
     }
 

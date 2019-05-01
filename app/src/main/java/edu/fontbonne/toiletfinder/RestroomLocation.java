@@ -6,27 +6,38 @@ import com.google.firebase.firestore.ServerTimestamp;
 import java.util.Date;
 
 public class RestroomLocation {
-    private GeoPoint geoPoint;
-    private @ServerTimestamp Date timestamp;
+    private  String restroomName;
+    private double latitude;
+    private double longitude;
 
-    public RestroomLocation(GeoPoint geoPoint, Date timestamp) {
-        this.geoPoint = geoPoint;
-        this.timestamp = timestamp;
+
+    public RestroomLocation(String restroomName, double latitude, double longitude) {
+        this.restroomName = restroomName;
+        this.latitude = latitude;
+        this.longitude = longitude;
     }
 
-    public GeoPoint getGeoPoint() {
-        return geoPoint;
+    public String getRestroomName() {
+        return restroomName;
     }
 
-    public void setGeoPoint(GeoPoint geoPoint) {
-        this.geoPoint = geoPoint;
+    public void setRestroomName(String restroomName) {
+        this.restroomName = restroomName;
     }
 
-    public Date getTimestamp() {
-        return timestamp;
+    public double getLatitude() {
+        return latitude;
     }
 
-    public void setTimestamp(Date timestamp) {
-        this.timestamp = timestamp;
+    public void setLatitude(double latitude) {
+        this.latitude = latitude;
+    }
+
+    public double getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(double longitude) {
+        this.longitude = longitude;
     }
 }

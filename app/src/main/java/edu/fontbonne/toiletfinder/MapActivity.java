@@ -1,13 +1,18 @@
 package edu.fontbonne.toiletfinder;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.pm.PackageManager;
+import android.location.Criteria;
 import android.location.Location;
+import android.location.LocationManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
+import android.util.Log;
+import android.widget.Toast;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
@@ -18,34 +23,41 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.GeoPoint;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
+
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MapActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
-    private FusedLocationProviderClient location;
-    RestroomLocation restroomLocation;
+    Location mLocation;
     private FirebaseFirestore mDb;
-    private static final int LOCATION_PERMISSION_REQUEST_CODE = 1;
+    Boolean mLocationPermissionGranted;
+    Criteria criteria;
+    String bestProvider;
+    List<RestroomLocation> list ;
+    private static final int  PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION =1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_map);
-        location = LocationServices.getFusedLocationProviderClient(this);
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
         mDb = FirebaseFirestore.getInstance();
-        location = LocationServices.getFusedLocationProviderClient(this);
 
-        getLocation();
     }
 
 
@@ -64,40 +76,94 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
         if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)!= PackageManager.PERMISSION_GRANTED){
             return;
         }
-        mMap.setMyLocationEnabled(true);
-        mMap.setOnMyLocationButtonClickListener((GoogleMap.OnMyLocationButtonClickListener) this);
-        mMap.setOnMyLocationClickListener((GoogleMap.OnMyLocationClickListener) this);
+        else {
+            mMap.setMyLocationEnabled(true);
+            LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+            criteria = new Criteria();
+            bestProvider = String.valueOf(locationManager.getBestProvider(criteria, true));
+            mLocation = locationManager.getLastKnownLocation(bestProvider);
+        }
+        getItem(new FireStoreCallBack() {
+            @Override
+            public void OnCallBack(List<RestroomLocation> list) {
+                Log.d("Dung 1", list.get(0).getRestroomName());
+            }
+        });
+        //for(int i = 0; i<list.size();i++){
+           // LatLng latLng = new LatLng(list.get(i).getLatitude(),list.get(i).getLongitude());
+            //mMap.addMarker(new MarkerOptions().position(latLng).title(list.get(i).getRestroomName()));
+        //}
+
         // Add a marker in Sydney and move the camera
         //LatLng sydney = new LatLng(-34, 151);
         //mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
         //mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
     }
 
-    public void getLocation(){
-        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)!= PackageManager.PERMISSION_GRANTED){
+    private void getLocationPermission() {
+        /*
+         * Request location permission, so that we can get the location of the
+         * device. The result of the permission request is handled by a callback,
+         * onRequestPermissionsResult.
+         */
+        if (ContextCompat.checkSelfPermission(this.getApplicationContext(),
+                android.Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+            mLocationPermissionGranted = true;
+        } else {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
+                    PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
+        }
+    }
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String permissions[],
+                                           @NonNull int[] grantResults) {
+        mLocationPermissionGranted = false;
+        switch (requestCode) {
+            case PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    mLocationPermissionGranted = true;
+                }
+            }
+        }
+        updateLocationUI();
+    }
+    private void updateLocationUI() {
+        if (mMap == null) {
             return;
         }
-        location.getLastLocation().addOnCompleteListener(new OnCompleteListener<Location>() {
+        try {
+            if (mLocationPermissionGranted) {
+                mMap.setMyLocationEnabled(true);
+                mMap.getUiSettings().setMyLocationButtonEnabled(true);
+            } else {
+                mMap.setMyLocationEnabled(false);
+                mMap.getUiSettings().setMyLocationButtonEnabled(false);
+                mLocation = null;
+                getLocationPermission();
+            }
+        } catch (SecurityException e)  {
+            Log.e("Exception: %s", e.getMessage());
+        }
+    }
+
+    public void getItem(final FireStoreCallBack fireStoreCallBack){
+        mDb.collection(getString(R.string.collection_restroom_locations)).get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
             @Override
-            public void onComplete(@NonNull Task<Location> task) {
+            public void onComplete(@NonNull Task<QuerySnapshot> task) {
                 if(task.isSuccessful()){
-                    Location location =(Location) task.getResult();
-                    GeoPoint geoPoint = new GeoPoint(location.getLatitude(),location.getLongitude());
-                    mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(location.getLatitude(),location.getLongitude())));
-                    restroomLocation.setGeoPoint(geoPoint);
-                    restroomLocation.setTimestamp(null);
+                    for(QueryDocumentSnapshot documentSnapshot :task.getResult()){
+                        RestroomLocation restroomLocation = documentSnapshot.toObject(RestroomLocation.class);
+                        list.add(restroomLocation);
+                        Log.d("Dung 1", list.get(0).getRestroomName());
+                    }
+                    fireStoreCallBack.OnCallBack(list);
                 }
             }
         });
-
     }
-
-    public void saveLocationToFirebase(){
-        if(restroomLocation!= null){
-            DocumentReference locationRef = mDb
-                    .collection(getString(R.string.collection_user_locations))
-                    .document(FirebaseAuth.getInstance().getUid());
-        }
-    }
-
 }
