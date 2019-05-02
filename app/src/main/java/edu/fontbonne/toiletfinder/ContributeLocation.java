@@ -26,6 +26,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -108,24 +109,27 @@ public class ContributeLocation extends FragmentActivity implements OnMapReadyCa
             ActivityCompat.requestPermissions(this,
                     new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
                     PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
+            return;
         }
         else {
             mMap.setMyLocationEnabled(true);
             LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
             criteria = new Criteria();
             bestProvider = String.valueOf(locationManager.getBestProvider(criteria, true));
-            mLocation = locationManager.getLastKnownLocation(bestProvider);
+            mLocation = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
             if (mLocation != null) {
                 Log.d("Dung1", mLocation.getLatitude() + "");
                 Log.d("Dung2", mLocation.getLongitude() + "");
                 latitude = mLocation.getLatitude();
                 longitude = mLocation.getLongitude();
                 LatLng curr = new LatLng(latitude, longitude);
-                mMap.addMarker(new MarkerOptions().position(curr).title("Your current location"));
+                mMap.addMarker(new MarkerOptions().position(curr)
+                        .title("Your current location")
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
                 mMap.moveCamera(CameraUpdateFactory.newLatLng(curr));
                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(curr,12.0f));
             } else {
-                locationManager.requestLocationUpdates(bestProvider, 1000, 0, (LocationListener) this);
+                //locationManager.requestLocationUpdates(bestProvider, 1000, 0, (LocationListener) this);
             }
         }
     }
@@ -157,9 +161,26 @@ public class ContributeLocation extends FragmentActivity implements OnMapReadyCa
                 mMap.setMyLocationEnabled(false);
                 mMap.getUiSettings().setMyLocationButtonEnabled(false);
                 mLocation = null;
+                getLocationPermission();
             }
         } catch (SecurityException e)  {
             Log.e("Exception: %s", e.getMessage());
+        }
+    }
+    private void getLocationPermission() {
+        /*
+         * Request location permission, so that we can get the location of the
+         * device. The result of the permission request is handled by a callback,
+         * onRequestPermissionsResult.
+         */
+        if (ContextCompat.checkSelfPermission(this.getApplicationContext(),
+                android.Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+            mLocationPermissionGranted = true;
+        }
+        else {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION}, 1);
         }
     }
 

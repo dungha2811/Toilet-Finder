@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Criteria;
 import android.location.Location;
+import android.location.LocationListener;
 import android.location.LocationManager;
 import android.nfc.Tag;
 import android.support.annotation.NonNull;
@@ -24,6 +25,8 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptor;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -82,19 +85,29 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback{
             ActivityCompat.requestPermissions(this,
                     new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
                     PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
-            return;
         }
         else {
             mMap.setMyLocationEnabled(true);
             LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
             criteria = new Criteria();
             bestProvider = String.valueOf(locationManager.getBestProvider(criteria, true));
-            mLocation = locationManager.getLastKnownLocation(bestProvider);
+            mLocation = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
 
 
-            LatLng curr = new LatLng(mLocation.getLatitude(),mLocation.getLongitude());
-            mMap.moveCamera(CameraUpdateFactory.newLatLng(curr));
-            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(curr,12.0f));
+            if(mLocation!=null){
+                Log.d("Dung1", mLocation.getLatitude() + "");
+                Log.d("Dung2", mLocation.getLongitude() + "");
+                LatLng curr = new LatLng(mLocation.getLatitude(),mLocation.getLongitude());
+                mMap.moveCamera(CameraUpdateFactory.newLatLng(curr));
+                mMap.addMarker(new MarkerOptions().position(curr)
+                        .title("Your current location")
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
+                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(curr,12.0f));
+            }
+            else {
+                //locationManager.requestLocationUpdates(bestProvider, 1000, 0, (LocationListener) this);
+            }
+
         }
         getItem(new FireStoreCallBack() {
             @Override
@@ -132,6 +145,22 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback{
         }
         updateLocationUI();
     }
+    private void getLocationPermission() {
+        /*
+         * Request location permission, so that we can get the location of the
+         * device. The result of the permission request is handled by a callback,
+         * onRequestPermissionsResult.
+         */
+        if (ContextCompat.checkSelfPermission(this.getApplicationContext(),
+                android.Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+            mLocationPermissionGranted = true;
+        }
+        else {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+        }
+    }
     private void updateLocationUI() {
         if (mMap == null) {
             Log.d("Dung 1",mLocationPermissionGranted+"");
@@ -147,6 +176,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback{
                 mMap.setMyLocationEnabled(false);
                 mMap.getUiSettings().setMyLocationButtonEnabled(false);
                 mLocation = null;
+                getLocationPermission();
             }
         } catch (SecurityException e)  {
             Log.e("Exception: %s", e.getMessage());
